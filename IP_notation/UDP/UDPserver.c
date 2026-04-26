@@ -17,14 +17,14 @@ void error(char *msg) {
 int main(int argc, char const *argv[])
 {
     const int portno = 1025;
-    int sockfd, newsockfd, n;
+    int sockfd, n;
     socklen_t clilen;
     struct sockaddr_in serv_addr, cli_addr;
     uint32_t ip_addr;
     uint16_t port;
     char buffer[512];
-    
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+
+    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     if (sockfd < 0)
     {
         error("ERROR opening socket");
@@ -37,29 +37,23 @@ int main(int argc, char const *argv[])
     {
         error("ERROR on binding");
     }
-    listen(sockfd, 5);
-    clilen = sizeof(cli_addr);
-    newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
-    if (newsockfd < 0)
-    {
-        error("ERROR on accept");
-    }
     
-    n = read(newsockfd, buffer, 511);
+    clilen = sizeof(cli_addr);
+    n = recvfrom(sockfd, buffer, 511, 0, (struct sockaddr *) &cli_addr, &clilen);
     if (n < 0)
     {
         error("ERROR reading from socket");
     }
-    
+
     memcpy(&ip_addr, buffer, sizeof(ip_addr));
     memcpy(&port, buffer + 5, sizeof(port));
 
-    struct in_addr addr;
     uint16_t target_port = ntohs(port);
+    struct in_addr addr;
     addr.s_addr = ip_addr;
     char *target_ip_str = inet_ntoa(addr);
     printf("IP is %s; uint32 is %u\n", target_ip_str, ntohl(ip_addr));
     printf("Port is %d; uint16 is %d\n", target_port, target_port);
-
+    
     return 0;
 }
